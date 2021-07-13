@@ -11,8 +11,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
 from sklearn.metrics import plot_roc_curve, confusion_matrix, classification_report
 
-fake_df = pd.read_csv('../data/Fake.csv')
-true_df = pd.read_csv('../data/True.csv')
+fake_df = pd.read_csv('data/Fake.csv')
+true_df = pd.read_csv('data/True.csv')
 fake_df['truth'] = 0
 true_df['truth'] = 1
 all_news_df = pd.concat([fake_df, true_df])
@@ -65,6 +65,20 @@ def passive_aggressive_model(X_train=X_train, y_train=y_train):
     grid = GridSearchCV(pa_clf, param_grid = {
                         'vect__ngram_range': [(1,1), (1,2)],
                         'clf__C': [1.0, 1.5, 2.0]
+                        },
+                        cv=5,
+                        refit=True)
+    grid.fit(X_train,y_train)
+    return grid
+
+def random_forest_model(X_train=X_train, y_train=y_train):
+    rf_clf = Pipeline([
+        ('vect', CountVectorizer()),
+        ('clf', PassiveAggressiveClassifier())
+        ])
+    grid = GridSearchCV(rf_clf, param_grid = {
+                        'vect__ngram_range': [(1,1), (1,2)],
+                        'max_features': ['auto','log2']
                         },
                         cv=5,
                         refit=True)
