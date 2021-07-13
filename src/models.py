@@ -25,25 +25,22 @@ def get_X_y_splits(df, X_col, y_col='truth'):
     y = df[y_col].values
     return train_test_split(X, y)
 
-X_train, X_test, y_train, y_test = get_X_y_splits(all_news_df, 'title')
-
-def baseline_model(X_train=X_train, X_test=X_test, y_train=y_train, y_test=y_test):
+def baseline_model(X_train, y_train):
     dummy_clf = DummyClassifier()
-    dummy_clf.fit(X_train, X_test)
+    dummy_clf.fit(X_train, y_train)
     return dummy_clf
 
-def naive_bayes_model(X_train=X_train, y_train=y_train):
+def naive_bayes_model(X_train, y_train):
     bayes_clf = Pipeline([
         ('vect', CountVectorizer()),
         ('clf', MultinomialNB())
         ])
     grid = GridSearchCV(bayes_clf, param_grid = {'vect__ngram_range': [(1,1),(1,2)]},
-                        cv=5,
-                        refit=True)
+                        cv=5,)
     grid.fit(X_train, y_train)
     return grid
 
-def stochastic_gradient_descent_model(X_train=X_train, y_train=y_train):
+def stochastic_gradient_descent_model(X_train, y_train):
     sgd_clf = Pipeline([
         ('vect', CountVectorizer()),
         ('clf', SGDClassifier())
@@ -52,12 +49,11 @@ def stochastic_gradient_descent_model(X_train=X_train, y_train=y_train):
                         'vect__ngram_range': [(1,1), (1,2)],
                         'clf__alpha': [.001, .0005, .0001]
                         },
-                        cv=5,
-                        refit=True)
+                        cv=5,)
     grid.fit(X_train,y_train)
     return grid
 
-def passive_aggressive_model(X_train=X_train, y_train=y_train):
+def passive_aggressive_model(X_train, y_train):
     pa_clf = Pipeline([
         ('vect', CountVectorizer()),
         ('clf', PassiveAggressiveClassifier())
@@ -66,12 +62,11 @@ def passive_aggressive_model(X_train=X_train, y_train=y_train):
                         'vect__ngram_range': [(1,1), (1,2)],
                         'clf__C': [1.0, 1.5, 2.0]
                         },
-                        cv=5,
-                        refit=True)
+                        cv=5,)
     grid.fit(X_train,y_train)
     return grid
 
-def random_forest_model(X_train=X_train, y_train=y_train):
+def random_forest_model(X_train, y_train):
     rf_clf = Pipeline([
         ('vect', CountVectorizer()),
         ('clf', PassiveAggressiveClassifier())
@@ -80,15 +75,15 @@ def random_forest_model(X_train=X_train, y_train=y_train):
                         'vect__ngram_range': [(1,1), (1,2)],
                         'max_features': ['auto','log2']
                         },
-                        cv=5,
-                        refit=True)
+                        cv=5,)
     grid.fit(X_train,y_train)
     return grid
 
 if __name__ == '__main__':
-    nb_model = naive_bayes_model()
-    sgd_model = stochastic_gradient_descent_model()
-    pa_model = passive_aggressive_model()
+    X_train, X_test, y_train, y_test = get_X_y_splits(all_news_df, 'title')
+    nb_model = naive_bayes_model(X_train,y_train)
+    sgd_model = stochastic_gradient_descent_model(X_train,y_train)
+    pa_model = passive_aggressive_model(X_train,y_train)
     models = [nb_model, sgd_model, pa_model]
     for model in models:
-        print(f'{model} accuracy: {model.score(X_test, y_test)}')
+        print(f'Accuracy: {model.score(X_test, y_test)}')
