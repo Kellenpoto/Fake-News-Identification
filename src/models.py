@@ -4,18 +4,12 @@ import matplotlib.pyplot as plt
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.naive_bayes import MultinomialNB, ComplementNB
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import SGDClassifier, PassiveAggressiveClassifier
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.cluster import KMeans
+import re
 from sklearn.metrics import plot_roc_curve, confusion_matrix, classification_report
 from nltk.tokenize import sent_tokenize
-
-fake_df = pd.read_csv('data/Fake.csv')
-true_df = pd.read_csv('data/True.csv')
-fake_df['truth'] = 0
-true_df['truth'] = 1
 
 def clean_text(x):
     lst = sent_tokenize(x)
@@ -25,13 +19,9 @@ def clean_text(x):
 
 def clean_titles(x):
     x = x.replace('Factbox: ', '')
-    x = x.replace(r"\(.*\)","")
+    x = re.sub(r"\(.*\)","", x)
     x = x.replace('WATCH:', '')
     return x
-
-true_df['text'] = true_df['text'].apply(clean_text)
-true_df['title'] = true_df['title'].apply(clean_titles)
-all_news_df = pd.concat([fake_df, true_df])
 
 def get_X_y_splits(df, X_col, y_col='truth'):
     ''' Takes a dataframe and returns a train test split for labeled data.
@@ -79,7 +69,7 @@ def passive_aggressive_model(X_train, y_train):
         ])
     grid = GridSearchCV(pa_clf, param_grid = {
                         'vect__ngram_range': [(1,1), (1,2)],
-                        'clf__C': [1.0, 1.5, 2.0]
+                        'clf__C': [1.0, 2.0, 3.0]
                         },
                         cv=5,)
     grid.fit(X_train,y_train)
@@ -100,6 +90,15 @@ def random_forest_model(X_train, y_train):
     return grid
 
 if __name__ == '__main__':
+    fake_df = pd.read_csv('data/Fake.csv')
+    true_df = pd.read_csv('data/True.csv')
+    fake_df['truth'] = 0
+    true_df['truth'] = 1
+
+    true_df['text'] = true_df['text'].apply(clean_text)
+    all_news_df = pd.concat([fake_df, true_df])
+    all_news_df['title'] = all_news_df['title'].apply(clean_titles)
+
     X_train, X_test, y_train, y_test = get_X_y_splits(all_news_df, 'title')
     nb_model = naive_bayes_model(X_train,y_train)
     sgd_model = stochastic_gradient_descent_model(X_train,y_train)
