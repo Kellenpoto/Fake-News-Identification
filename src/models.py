@@ -10,11 +10,27 @@ from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
 from sklearn.metrics import plot_roc_curve, confusion_matrix, classification_report
+from nltk.tokenize import sent_tokenize
 
 fake_df = pd.read_csv('data/Fake.csv')
 true_df = pd.read_csv('data/True.csv')
 fake_df['truth'] = 0
 true_df['truth'] = 1
+
+def clean_text(x):
+    lst = sent_tokenize(x)
+    if lst != [] and ' -' in lst[0]:
+        lst[0] = lst[0].split(' - ')[1]
+    return ''.join(lst)
+
+def clean_titles(x):
+    x = x.replace('Factbox: ', '')
+    x = x.replace(r"\(.*\)","")
+    x = x.replace('WATCH:', '')
+    return x
+
+true_df['text'] = true_df['text'].apply(clean_text)
+true_df['title'] = true_df['title'].apply(clean_titles)
 all_news_df = pd.concat([fake_df, true_df])
 
 def get_X_y_splits(df, X_col, y_col='truth'):
@@ -32,7 +48,8 @@ def baseline_model(X_train, y_train):
 
 def naive_bayes_model(X_train, y_train):
     bayes_clf = Pipeline([
-        ('vect', CountVectorizer()),
+        ('vect', CountVectorizer(stop_words='english')),
+        ('tfidf', TfidfTransformer()),
         ('clf', MultinomialNB())
         ])
     grid = GridSearchCV(bayes_clf, param_grid = {'vect__ngram_range': [(1,1),(1,2)]},
@@ -42,7 +59,8 @@ def naive_bayes_model(X_train, y_train):
 
 def stochastic_gradient_descent_model(X_train, y_train):
     sgd_clf = Pipeline([
-        ('vect', CountVectorizer()),
+        ('vect', CountVectorizer(stop_words='english')),
+        ('tfidf', TfidfTransformer()),
         ('clf', SGDClassifier())
         ])
     grid = GridSearchCV(sgd_clf, param_grid = {
@@ -55,7 +73,8 @@ def stochastic_gradient_descent_model(X_train, y_train):
 
 def passive_aggressive_model(X_train, y_train):
     pa_clf = Pipeline([
-        ('vect', CountVectorizer()),
+        ('vect', CountVectorizer(stop_words='english')),
+        ('tfidf', TfidfTransformer()),
         ('clf', PassiveAggressiveClassifier())
         ])
     grid = GridSearchCV(pa_clf, param_grid = {
@@ -68,7 +87,8 @@ def passive_aggressive_model(X_train, y_train):
 
 def random_forest_model(X_train, y_train):
     rf_clf = Pipeline([
-        ('vect', CountVectorizer()),
+        ('vect', CountVectorizer(stop_words='english')),
+        ('tfidf', TfidfTransformer()),
         ('clf', PassiveAggressiveClassifier())
         ])
     grid = GridSearchCV(rf_clf, param_grid = {
@@ -86,4 +106,4 @@ if __name__ == '__main__':
     pa_model = passive_aggressive_model(X_train,y_train)
     models = [nb_model, sgd_model, pa_model]
     for model in models:
-        print(f'Accuracy: {model.score(X_test, y_test)}')
+        print(f'{model.best_estimator_.named_steps.clf} Accuracy: {model.score(X_test, y_test)}')
