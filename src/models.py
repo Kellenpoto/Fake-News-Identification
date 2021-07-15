@@ -21,7 +21,10 @@ def clean_text(x):
 def clean_titles(x):
     x = x.replace('Factbox: ', '')
     x = re.sub(r"\(.*\)","", x)
+    x = re.sub(r"\[.*\]","", x)
     x = x.replace('WATCH:', '')
+    x = x.replace('BREAKING:', '')
+    x = x.replace(': White House', '')
     return x
 
 def get_X_y_splits(df, X_col, y_col='truth'):
@@ -101,7 +104,7 @@ def plot_feature_significance(model, fig, ax, col=None):
     freq_df = freq_df.iloc[(-freq_df['coefs'].abs()).argsort()]
     ax.bar(freq_df.index[:20], freq_df['coefs'][:20].values, color=(freq_df['coefs'][:20] > 0).map({True:'green',False:'red'}))
     ax.tick_params(axis='x', labelrotation=45)
-    ax.set_title(f'Feature Significance {col}')
+    ax.set_title(f'Feature Significance: {col}')
     ax.set_ylabel('Coefficients')
     fig.tight_layout()
     fig.savefig(f'images/feature_correlation_{col}')
@@ -114,7 +117,7 @@ def plot_word_counts(X_train, fig, ax, col=None):
     counts_df.sort_values('counts', ascending=False, inplace=True)
     ax.bar(counts_df.index[:20], counts_df['counts'][:20].values, color='blue')
     ax.tick_params(axis='x', labelrotation=45)
-    ax.set_title(f'Word Counts {col}')
+    ax.set_title(f'Word Counts: {col}')
     ax.set_ylabel('Counts')
     fig.tight_layout()
     fig.savefig(f'images/word_counts_{col}')
@@ -125,7 +128,7 @@ def plot_all_roc_curves(X_test, y_test, models, titles, fig, ax, zoom=True, col=
     if zoom:
         ax.set_ylim(.8,1.01)
         ax.set_xlim(0,.2)
-    ax.set_title(f'ROC Curves {col}')
+    ax.set_title(f'ROC Curves: {col}')
     fig.tight_layout()
     if zoom:
         fig.savefig(f'images/zoomed_roc_curves_{col}')
