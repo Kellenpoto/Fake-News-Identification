@@ -38,8 +38,8 @@ Although the random forest model offers the highest precision and accuracy among
 <p align="center"><img width="500", src="images/confusion matrices_titles.png"></p>
 
 ## Conclusions
+<p align="center">
 Below are the top five most fake and most real articles in the dataset.
-<p align="left">
   <img width="800", src="images/top_articles.png">
 </p>
 
