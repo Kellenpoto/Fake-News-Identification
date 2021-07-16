@@ -96,19 +96,7 @@ def random_forest_model(X_train, y_train):
                         scoring='recall')
     grid.fit(X_train,y_train)
     return grid
-
-def plot_feature_significance(model, fig, ax, col=None):
-    bag = model.best_estimator_.named_steps.vect.get_feature_names()
-    model_coefs = model.best_estimator_.named_steps.clf.coef_
-    freq_df = pd.DataFrame(index=bag, data={'coefs': model_coefs[0]})
-    freq_df = freq_df.iloc[(-freq_df['coefs'].abs()).argsort()]
-    ax.bar(freq_df.index[:20], freq_df['coefs'][:20].values, color=(freq_df['coefs'][:20] > 0).map({True:'green',False:'red'}))
-    ax.tick_params(axis='x', labelrotation=45)
-    ax.set_title(f'Feature Significance: {col}')
-    ax.set_ylabel('Coefficients')
-    fig.tight_layout()
-    fig.savefig(f'images/feature_correlation_{col}')
-
+    
 def plot_word_counts(X_train, fig, ax, col=None):
     cv = CountVectorizer(stop_words='english', max_features=1000, ngram_range=(1,2))
     counts = cv.fit_transform(X_train).sum(axis=0)
@@ -121,6 +109,44 @@ def plot_word_counts(X_train, fig, ax, col=None):
     ax.set_ylabel('Counts')
     fig.tight_layout()
     fig.savefig(f'images/word_counts_{col}')
+
+def plot_word_freq_diff(df, fig, ax, col):
+    fake_news = df[df['truth']==0]
+    real_news = df[df['truth']==1]
+    fake_cv = CountVectorizer(stop_words='english', max_features=1000, ngram_range=(1,2))
+    real_cv = CountVectorizer(stop_words='english', max_features=1000, ngram_range=(1,2))
+    fake_counts = fake_cv.fit_transform(fake_news[col]).sum(axis=0)
+    real_counts = real_cv.fit_transform(real_news[col]).sum(axis=0)
+    fake_features = fake_cv.get_feature_names()
+    real_features = real_cv.get_feature_names()
+    fake_counts_df = pd.DataFrame(index=fake_features, data=fake_counts.T, columns=['fake_counts'])
+    real_counts_df = pd.DataFrame(index=real_features, data=real_counts.T, columns=['real_counts'])
+    all_counts_df = pd.concat([real_counts_df, fake_counts_df], axis=1).fillna(0)
+    all_counts_df['real_freq'] = all_counts_df['real_counts']/len(real_news)
+    all_counts_df['fake_freq'] = all_counts_df['fake_counts']/len(fake_news)
+    all_counts_df['freq_dif'] = all_counts_df['real_freq']-all_counts_df['fake_freq']
+    all_counts_df.sort_values('freq_dif', key=abs, ascending=False, inplace=True)
+    ax.bar(all_counts_df.index[:20], all_counts_df['freq_dif'][:20].values, color=(all_counts_df['freq_dif'][:20] > 0).map({True:'green',False:'red'}))
+    ax.tick_params(axis='x', labelrotation=45)
+    if col == 'title':
+        ax.set_title(f'Term Frequency: Titles')
+    if col == 'text':
+        ax.set_title(f'Term Frequency: Text')
+    ax.set_ylabel('Difference in Term Frequency')
+    fig.tight_layout()
+    fig.savefig(f'images/word_frequency_{col}')
+
+def plot_feature_significance(model, fig, ax, col=None):
+    bag = model.best_estimator_.named_steps.vect.get_feature_names()
+    model_coefs = model.best_estimator_.named_steps.clf.coef_
+    freq_df = pd.DataFrame(index=bag, data={'coefs': model_coefs[0]})
+    freq_df = freq_df.iloc[(-freq_df['coefs'].abs()).argsort()]
+    ax.bar(freq_df.index[:20], freq_df['coefs'][:20].values, color=(freq_df['coefs'][:20] > 0).map({True:'green',False:'red'}))
+    ax.tick_params(axis='x', labelrotation=45)
+    ax.set_title(f'Feature Significance: {col}')
+    ax.set_ylabel('Coefficients')
+    fig.tight_layout()
+    fig.savefig(f'images/feature_correlation_{col}')
 
 def plot_all_roc_curves(X_test, y_test, models, titles, fig, ax, zoom=True, col=None):
     for model, title in zip(models,titles):
