@@ -13,10 +13,23 @@ from sklearn.metrics import plot_roc_curve, confusion_matrix, classification_rep
 from nltk.tokenize import sent_tokenize
 
 def clean_text(x):
+    term_filter = ['eatured', 'image', 'Image', 'Getty',
+        'via', 'http', 'euters', 'Via', 'Read more:']
     lst = sent_tokenize(x)
-    if lst != [] and ' -' in lst[0]:
-        lst[0] = lst[0].split(' - ')[1]
-    return ''.join(lst)
+    if lst != []:
+        if ' -' in lst[0]:
+            lst[0] = lst[0].split(' -')[1]
+        for term in term_filter:
+            if term in lst[-1]:
+                lst[-1] = ''
+        lst = ''.join(lst)
+    x = str(lst)
+    x = x.replace('Reuters','')
+    x = x.replace('reuters', '')
+    x = x.replace('video','')
+    x = x.replace('Watch:','')
+    x = x.replace('twitter.com', '')
+    return x
 
 def clean_titles(x):
     x = x.replace('Factbox: ', '')
