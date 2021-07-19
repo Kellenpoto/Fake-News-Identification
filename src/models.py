@@ -13,6 +13,8 @@ from sklearn.metrics import plot_roc_curve, confusion_matrix, classification_rep
 from nltk.tokenize import sent_tokenize
 
 def clean_text(x):
+    '''Input: str(text data)
+    Removes terms forcefully from text in which are too unique to this dataset.'''
     term_filter = ['eatured', 'image', 'Image', 'Getty',
         'via', 'http', 'euters', 'Via', 'Read more:']
     lst = sent_tokenize(x)
@@ -32,6 +34,8 @@ def clean_text(x):
     return x
 
 def clean_titles(x):
+    '''Input: str(title data)
+    Removes terms from titles which are hallmarks of this dataset only.'''
     x = x.replace('Factbox: ', '')
     x = re.sub(r"\(.*\)","", x)
     x = re.sub(r"\[.*\]","", x)
@@ -41,19 +45,30 @@ def clean_titles(x):
     return x
 
 def get_X_y_splits(df, X_col, y_col='truth'):
-    ''' Takes a dataframe and returns a train test split for labeled data.
-    Input: DataFrame, X column name (string), target column name (string).
-    Ouput: X_train, X_test, y_train, y_test'''
+    '''Input: Pandas DataFrame Object
+    Output: X_train, X_test, y_trian, y_test
+    get_X_y_splits takes in a dataframe and a column name in the news dataframe.
+    The target is set to the 'truth' column by default'''
     X = df[X_col].values
     y = df[y_col].values
     return train_test_split(X, y)
 
 def baseline_model(X_train, y_train):
+    '''Input: Train and test data
+    Output: SKLearn DummyClassifier fit to data
+    Takes in X_train and y_train and returns a stratified dummy model
+    to compare against other models.'''
     dummy_clf = DummyClassifier(strategy='stratified')
     dummy_clf.fit(X_train, y_train)
     return dummy_clf
 
 def naive_bayes_model(X_train, y_train):
+    '''Input: Train and test data
+    Output: SKLearn GridSearch Object fit to data
+    This function takes in train and test data and returns a gridsearch
+    optimized MultinomialNB model. The data is vectorized and transformed
+    by a TFIDF transformer in the pipeline before being fit to the model.
+    '''
     bayes_clf = Pipeline([
         ('vect', CountVectorizer(stop_words='english')),
         ('tfidf', TfidfTransformer()),
@@ -66,6 +81,12 @@ def naive_bayes_model(X_train, y_train):
     return grid
 
 def stochastic_gradient_descent_model(X_train, y_train):
+    '''Input: Train and test data
+    Output: SKLearn GridSearch Object fit to data
+     This function takes in train and test data and returns a gridsearch
+    optimized SGDClassifier model. The data is vectorized and transformed
+    by a TFIDF transformer in the pipeline before being fit to the model.
+    '''
     sgd_clf = Pipeline([
         ('vect', CountVectorizer(stop_words='english')),
         ('tfidf', TfidfTransformer()),
@@ -81,6 +102,12 @@ def stochastic_gradient_descent_model(X_train, y_train):
     return grid
 
 def passive_aggressive_model(X_train, y_train):
+    '''Input: Train and test data
+    Output: SKLearn GridSearch Object fit to data
+     This function takes in train and test data and returns a gridsearch
+    optimized PassiveAggressive online model. The data is vectorized and transformed
+    by a TFIDF transformer in the pipeline before being fit to the model.
+    '''
     pa_clf = Pipeline([
         ('vect', CountVectorizer(stop_words='english')),
         ('tfidf', TfidfTransformer()),
@@ -96,6 +123,12 @@ def passive_aggressive_model(X_train, y_train):
     return grid
 
 def random_forest_model(X_train, y_train):
+    '''Input: Train and test data
+    Output: SKLearn GridSearch Object fit to data
+     This function takes in train and test data and returns a gridsearch
+    optimized RandomForest model. The data is vectorized and transformed
+    by a TFIDF transformer in the pipeline before being fit to the model.
+    '''
     rf_clf = Pipeline([
         ('vect', CountVectorizer(stop_words='english')),
         ('tfidf', TfidfTransformer()),
@@ -111,6 +144,9 @@ def random_forest_model(X_train, y_train):
     return grid
     
 def plot_word_counts(X_train, fig, ax, col=None):
+    '''Input: str() text or title data, Matplotlib figure and axis, column
+    Output: Bar plot of top words and counts in data.
+    '''
     cv = CountVectorizer(stop_words='english', max_features=1000, ngram_range=(1,2))
     counts = cv.fit_transform(X_train).sum(axis=0)
     features = cv.get_feature_names()
@@ -124,6 +160,8 @@ def plot_word_counts(X_train, fig, ax, col=None):
     fig.savefig(f'images/word_counts_{col}')
 
 def plot_word_freq_diff(df, fig, ax, col):
+    '''Input: Pandas DataFrame Object, Matplotlib figure and axis, column (text or title)
+    Output: Bar plot of difference in word freq between real and fake classes.'''
     fake_news = df[df['truth']==0]
     real_news = df[df['truth']==1]
     fake_cv = CountVectorizer(stop_words='english', max_features=1000, ngram_range=(1,2))
@@ -150,6 +188,8 @@ def plot_word_freq_diff(df, fig, ax, col):
     fig.savefig(f'images/word_frequency_{col}')
 
 def plot_feature_significance(model, fig, ax, col=None):
+    '''Input: SKLearn Linear Model, Matplotlib figure and axis, column (text or title)
+    Output: Bar plot of feature significance calculated fro model coefficients.'''
     bag = model.best_estimator_.named_steps.vect.get_feature_names()
     model_coefs = model.best_estimator_.named_steps.clf.coef_
     freq_df = pd.DataFrame(index=bag, data={'coefs': model_coefs[0]})
@@ -162,6 +202,10 @@ def plot_feature_significance(model, fig, ax, col=None):
     fig.savefig(f'images/feature_correlation_{col}')
 
 def plot_all_roc_curves(X_test, y_test, models, titles, fig, ax, zoom=True, col=None):
+    '''Input: String test data, List of SKLearn models with dicision function, List of model names,
+    Matplotlib figure and axis, Zoom toggle, coumn (text or title)
+    Output: ROC Curves of all models in list
+    Plots ROC curves for all models in list provided they have a decision function'''
     for model, title in zip(models,titles):
         plot_roc_curve(model, X_test, y_test, name=f'{title}', ax=ax)
     if zoom:
